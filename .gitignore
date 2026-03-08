@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data folder (datasets)
+data/
+
+# Data files (large datasets)
+*.xlsx
+*.csv
+*.parquet
+
+# Model artifacts (generated files)
+*.pkl
+*.h5
+*.joblib
+*.model
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Streamlit
+.streamlit/
+
+# Temporary files
+*.tmp
+*.bak
+temp/
+tmp/
