@@ -1,0 +1,1558 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Credit Risk Assessor — Indian Bank</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --navy: #07111f;
+        --navy2: #0d1e30;
+        --teal: #00c9a7;
+        --teal2: #00967d;
+        --slate: #1e3448;
+        --muted: #4a6580;
+        --light: #8fa8bf;
+        --offwhite: #eef3f8;
+        --white: #ffffff;
+        --p1: #22c55e;
+        --p2: #3b82f6;
+        --p3: #f59e0b;
+        --p4: #ef4444;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--navy);
+        color: var(--white);
+        font-family: "DM Sans", sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* ── Background grid ── */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(0, 201, 167, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 201, 167, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* ── Header ── */
+      header {
+        position: relative;
+        z-index: 10;
+        padding: 28px 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(0, 201, 167, 0.12);
+        backdrop-filter: blur(12px);
+        background: rgba(7, 17, 31, 0.7);
+        position: sticky;
+        top: 0;
+      }
+
+      .logo {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.1rem;
+        letter-spacing: -0.3px;
+        color: var(--teal);
+      }
+      .logo span {
+        color: var(--white);
+      }
+
+      .header-tag {
+        font-family: "DM Mono", monospace;
+        font-size: 0.7rem;
+        color: var(--muted);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+
+      /* ── Main layout ── */
+      main {
+        position: relative;
+        z-index: 1;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 40px 48px 80px;
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 32px;
+        align-items: start;
+      }
+
+      /* ── Section labels ── */
+      .section-label {
+        font-family: "DM Mono", monospace;
+        font-size: 0.65rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      /* ── Input Panel ── */
+      .input-panel {
+        background: var(--navy2);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 16px;
+        padding: 28px;
+        position: sticky;
+        top: 88px;
+      }
+
+      .input-panel h2 {
+        font-family: "Syne", sans-serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 24px;
+        color: var(--white);
+      }
+
+      .input-group {
+        margin-bottom: 20px;
+      }
+
+      .input-group-title {
+        font-family: "DM Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: var(--teal);
+        margin-bottom: 12px;
+        margin-top: 20px;
+      }
+
+      .slider-row {
+        margin-bottom: 14px;
+      }
+
+      .slider-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+
+      .slider-label {
+        font-size: 0.78rem;
+        color: var(--light);
+        font-weight: 400;
+      }
+
+      .slider-value {
+        font-family: "DM Mono", monospace;
+        font-size: 0.78rem;
+        color: var(--teal);
+        font-weight: 500;
+        min-width: 48px;
+        text-align: right;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        height: 4px;
+        appearance: none;
+        -webkit-appearance: none;
+        background: var(--slate);
+        border-radius: 2px;
+        outline: none;
+        cursor: pointer;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--teal);
+        border: 2px solid var(--navy);
+        box-shadow: 0 0 8px rgba(0, 201, 167, 0.4);
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+      input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.3);
+        box-shadow: 0 0 14px rgba(0, 201, 167, 0.6);
+      }
+
+      .checkbox-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .checkbox-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        transition: all 0.2s ease;
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .checkbox-item:hover {
+        border-color: rgba(0, 201, 167, 0.3);
+        background: rgba(0, 201, 167, 0.04);
+      }
+      .checkbox-item.checked {
+        border-color: rgba(0, 201, 167, 0.4);
+        background: rgba(0, 201, 167, 0.08);
+      }
+
+      .checkbox-item input {
+        display: none;
+      }
+      .checkbox-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1.5px solid var(--muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+      }
+      .checkbox-item.checked .checkbox-dot {
+        background: var(--teal);
+        border-color: var(--teal);
+      }
+      .checkbox-dot::after {
+        content: "✓";
+        font-size: 9px;
+        color: var(--navy);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .checkbox-item.checked .checkbox-dot::after {
+        opacity: 1;
+      }
+      .checkbox-label {
+        font-size: 0.75rem;
+        color: var(--light);
+      }
+
+      /* ── Results Panel ── */
+      .results-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      /* ── Decision Card ── */
+      .decision-card {
+        border-radius: 16px;
+        padding: 32px;
+        border: 1px solid;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .decision-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: currentColor;
+        transition: all 0.4s ease;
+      }
+
+      .decision-tier {
+        font-family: "Syne", sans-serif;
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1;
+        transition: all 0.3s ease;
+      }
+      .decision-label {
+        font-family: "Syne", sans-serif;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-top: 6px;
+        transition: all 0.3s ease;
+      }
+      .decision-advice {
+        font-size: 0.88rem;
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 10px;
+        line-height: 1.6;
+      }
+      .decision-confidence {
+        position: absolute;
+        top: 28px;
+        right: 28px;
+        text-align: right;
+      }
+      .confidence-value {
+        font-family: "Syne", sans-serif;
+        font-size: 2.2rem;
+        font-weight: 700;
+        transition: all 0.3s ease;
+      }
+      .confidence-label {
+        font-family: "DM Mono", monospace;
+        font-size: 0.62rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        opacity: 0.5;
+        margin-top: 2px;
+      }
+
+      /* ── Middle row ── */
+      .mid-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      /* ── Gauge ── */
+      .gauge-card {
+        background: var(--navy2);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .gauge-wrap {
+        position: relative;
+        width: 180px;
+        height: 100px;
+        margin: 12px 0 8px;
+      }
+
+      .gauge-svg {
+        width: 180px;
+        height: 100px;
+      }
+
+      .gauge-bg {
+        fill: none;
+        stroke: var(--slate);
+        stroke-width: 12;
+        stroke-linecap: round;
+      }
+      .gauge-fill {
+        fill: none;
+        stroke-width: 12;
+        stroke-linecap: round;
+        transition:
+          stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+          stroke 0.4s ease;
+      }
+
+      .gauge-label {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        text-align: center;
+      }
+      .gauge-score {
+        font-family: "Syne", sans-serif;
+        font-size: 1.6rem;
+        font-weight: 800;
+        transition: color 0.4s ease;
+      }
+      .gauge-band {
+        font-family: "DM Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        opacity: 0.6;
+        margin-top: 2px;
+      }
+
+      /* ── Probability Bars ── */
+      .prob-card {
+        background: var(--navy2);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 16px;
+        padding: 24px;
+      }
+
+      .prob-row {
+        margin-bottom: 14px;
+      }
+      .prob-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .prob-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+      .prob-tier {
+        font-family: "DM Mono", monospace;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+      .prob-pct {
+        font-family: "DM Mono", monospace;
+        font-size: 0.75rem;
+        transition: all 0.3s ease;
+      }
+
+      .prob-track {
+        height: 8px;
+        background: var(--slate);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .prob-bar {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* ── Drivers Panel ── */
+      .drivers-card {
+        background: var(--navy2);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 16px;
+        padding: 24px;
+      }
+
+      .driver-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        transition: all 0.3s ease;
+      }
+      .driver-row:last-child {
+        border-bottom: none;
+      }
+
+      .driver-rank {
+        font-family: "Syne", sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: rgba(255, 255, 255, 0.12);
+        min-width: 28px;
+      }
+
+      .driver-info {
+        flex: 1;
+      }
+      .driver-name {
+        font-family: "DM Mono", monospace;
+        font-size: 0.75rem;
+        color: var(--white);
+        margin-bottom: 3px;
+      }
+      .driver-desc {
+        font-size: 0.72rem;
+        color: var(--muted);
+        line-height: 1.4;
+      }
+
+      .driver-impact {
+        text-align: right;
+        min-width: 56px;
+      }
+      .driver-impact-val {
+        font-family: "DM Mono", monospace;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+      .driver-impact-bar {
+        height: 3px;
+        border-radius: 2px;
+        margin-top: 4px;
+        transition: width 0.5s ease;
+      }
+
+      /* ── CIBIL threshold line ── */
+      .threshold-card {
+        background: var(--navy2);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 16px;
+        padding: 24px;
+      }
+
+      .threshold-track {
+        position: relative;
+        height: 10px;
+        background: linear-gradient(
+          to right,
+          #ef4444 0%,
+          #ef4444 27%,
+          #f59e0b 27%,
+          #f59e0b 40%,
+          #3b82f6 40%,
+          #3b82f6 68%,
+          #22c55e 68%
+        );
+        border-radius: 5px;
+        margin: 20px 0 8px;
+      }
+
+      .threshold-pointer {
+        position: absolute;
+        top: -6px;
+        width: 2px;
+        height: 22px;
+        background: var(--white);
+        border-radius: 1px;
+        transform: translateX(-50%);
+        transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+      }
+      .threshold-pointer::after {
+        content: "";
+        position: absolute;
+        bottom: -5px;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 4px solid transparent;
+        border-top-color: var(--white);
+      }
+
+      .threshold-labels {
+        display: flex;
+        justify-content: space-between;
+        font-family: "DM Mono", monospace;
+        font-size: 0.6rem;
+        color: var(--muted);
+        letter-spacing: 0.5px;
+      }
+
+      .threshold-zones {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+      }
+      .threshold-zone {
+        font-size: 0.68rem;
+        text-align: center;
+        opacity: 0.7;
+      }
+
+      /* ── Animations ── */
+      @keyframes fadeSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .decision-card,
+      .gauge-card,
+      .prob-card,
+      .drivers-card,
+      .threshold-card {
+        animation: fadeSlideIn 0.5s ease both;
+      }
+
+      .pulse {
+        animation: pulse 0.3s ease;
+      }
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.04);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 960px) {
+        main {
+          grid-template-columns: 1fr;
+          padding: 24px;
+        }
+        .input-panel {
+          position: static;
+        }
+        .mid-row {
+          grid-template-columns: 1fr;
+        }
+        header {
+          padding: 20px 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="logo">CREDIT<span>RISK</span></div>
+      <div class="header-tag">
+        Indian Bank · CIBIL Bureau · XGBoost + SHAP &nbsp;|&nbsp;
+        <span id="api-status"
+          ><span style="color: var(--muted)">● Connecting...</span></span
+        >
+      </div>
+    </header>
+
+    <main>
+      <!-- ── INPUT PANEL ── -->
+      <div class="input-panel">
+        <h2>Applicant Profile</h2>
+
+        <div class="input-group-title">Credit Bureau</div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">CIBIL Score</span>
+            <span class="slider-value" id="val-cibil">680</span>
+          </div>
+          <input
+            type="range"
+            id="cibil"
+            min="300"
+            max="900"
+            value="680"
+            step="1"
+          />
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">Delinquencies — last 6M</span>
+            <span class="slider-value" id="val-deliq6">0</span>
+          </div>
+          <input type="range" id="deliq6" min="0" max="10" value="0" step="1" />
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">Delinquencies — last 12M</span>
+            <span class="slider-value" id="val-deliq12">0</span>
+          </div>
+          <input
+            type="range"
+            id="deliq12"
+            min="0"
+            max="10"
+            value="0"
+            step="1"
+          />
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">60+ DPD occurrences</span>
+            <span class="slider-value" id="val-dpd">0</span>
+          </div>
+          <input type="range" id="dpd" min="0" max="10" value="0" step="1" />
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">Enquiries — last 6M</span>
+            <span class="slider-value" id="val-enq6">1</span>
+          </div>
+          <input type="range" id="enq6" min="0" max="15" value="1" step="1" />
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">Enquiries — last 12M</span>
+            <span class="slider-value" id="val-enq12">2</span>
+          </div>
+          <input type="range" id="enq12" min="0" max="20" value="2" step="1" />
+        </div>
+
+        <div class="input-group-title">Financial & Employment</div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">Net Monthly Income (₹ thousands)</span>
+            <span class="slider-value" id="val-income">25</span>
+          </div>
+          <input
+            type="range"
+            id="income"
+            min="5"
+            max="200"
+            value="25"
+            step="1"
+          />
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">Years with Current Employer</span>
+            <span class="slider-value" id="val-emp">3</span>
+          </div>
+          <input type="range" id="emp" min="0" max="20" value="3" step="0.5" />
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">Total Loans (ever)</span>
+            <span class="slider-value" id="val-tl">4</span>
+          </div>
+          <input type="range" id="tl" min="0" max="20" value="4" step="1" />
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">Missed Payments (total)</span>
+            <span class="slider-value" id="val-missed">0</span>
+          </div>
+          <input type="range" id="missed" min="0" max="20" value="0" step="1" />
+        </div>
+
+        <div class="input-group-title">Loan Products Held</div>
+        <div class="checkbox-group">
+          <label class="checkbox-item" id="cb-hl">
+            <input type="checkbox" id="hl" />
+            <div class="checkbox-dot"></div>
+            <span class="checkbox-label">🏠 Home Loan</span>
+          </label>
+          <label class="checkbox-item" id="cb-pl">
+            <input type="checkbox" id="pl" checked />
+            <div class="checkbox-dot"></div>
+            <span class="checkbox-label">💳 Personal Loan</span>
+          </label>
+          <label class="checkbox-item" id="cb-cc">
+            <input type="checkbox" id="cc" />
+            <div class="checkbox-dot"></div>
+            <span class="checkbox-label">🃏 Credit Card</span>
+          </label>
+          <label class="checkbox-item" id="cb-gl">
+            <input type="checkbox" id="gl" />
+            <div class="checkbox-dot"></div>
+            <span class="checkbox-label">🥇 Gold Loan</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- ── RESULTS PANEL ── -->
+      <div class="results-panel">
+        <!-- Decision Card -->
+        <div class="decision-card" id="decision-card">
+          <div>
+            <div class="decision-tier" id="decision-tier">P2</div>
+            <div class="decision-label" id="decision-label">
+              Standard Approval
+            </div>
+            <div class="decision-advice" id="decision-advice">
+              Strong credit profile. Eligible for standard loan terms at normal
+              interest rate.
+            </div>
+          </div>
+          <div class="decision-confidence">
+            <div class="confidence-value" id="conf-value">74%</div>
+            <div class="confidence-label">Confidence</div>
+          </div>
+        </div>
+
+        <!-- CIBIL Threshold -->
+        <div class="threshold-card">
+          <div class="section-label">CIBIL Score Position</div>
+          <div class="threshold-track">
+            <div class="threshold-pointer" id="threshold-ptr"></div>
+          </div>
+          <div class="threshold-labels">
+            <span>300</span><span>600</span><span>650</span><span>700</span
+            ><span>750</span><span>900</span>
+          </div>
+          <div class="threshold-zones" style="margin-top: 10px">
+            <span class="threshold-zone" style="color: var(--p4)"
+              >Poor<br />Auto-Reject</span
+            >
+            <span class="threshold-zone" style="color: var(--p4)"
+              >Fair<br />Near-Reject</span
+            >
+            <span class="threshold-zone" style="color: var(--p3)"
+              >Good<br />Grey Zone</span
+            >
+            <span class="threshold-zone" style="color: var(--p2)"
+              >Very Good<br />Safe Zone</span
+            >
+            <span class="threshold-zone" style="color: var(--p1)"
+              >Excellent<br />Premium</span
+            >
+          </div>
+        </div>
+
+        <!-- Mid row -->
+        <div class="mid-row">
+          <!-- Gauge -->
+          <div class="gauge-card">
+            <div class="section-label" style="width: 100%">Risk Score</div>
+            <div class="gauge-wrap">
+              <svg class="gauge-svg" viewBox="0 0 180 100">
+                <path
+                  class="gauge-bg"
+                  d="M 20 90 A 70 70 0 0 1 160 90"
+                  stroke-dasharray="220"
+                  stroke-dashoffset="0"
+                />
+                <path
+                  class="gauge-fill"
+                  id="gauge-path"
+                  d="M 20 90 A 70 70 0 0 1 160 90"
+                  stroke-dasharray="220"
+                  stroke-dashoffset="110"
+                  stroke="var(--p2)"
+                />
+              </svg>
+              <div class="gauge-label">
+                <div class="gauge-score" id="gauge-score">45</div>
+                <div class="gauge-band" id="gauge-band">MODERATE</div>
+              </div>
+            </div>
+            <div
+              style="
+                font-size: 0.72rem;
+                color: var(--muted);
+                text-align: center;
+                margin-top: 4px;
+              "
+            >
+              Composite risk (0 = safe, 100 = high risk)
+            </div>
+          </div>
+
+          <!-- Probability Bars -->
+          <div class="prob-card">
+            <div class="section-label">Tier Probabilities</div>
+            <div class="prob-row">
+              <div class="prob-header">
+                <span class="prob-tier" style="color: var(--p1)"
+                  >P1 — Premium</span
+                >
+                <span class="prob-pct" id="prob-p1" style="color: var(--p1)"
+                  >5%</span
+                >
+              </div>
+              <div class="prob-track">
+                <div
+                  class="prob-bar"
+                  id="bar-p1"
+                  style="width: 5%; background: var(--p1)"
+                ></div>
+              </div>
+            </div>
+            <div class="prob-row">
+              <div class="prob-header">
+                <span class="prob-tier" style="color: var(--p2)"
+                  >P2 — Standard</span
+                >
+                <span class="prob-pct" id="prob-p2" style="color: var(--p2)"
+                  >74%</span
+                >
+              </div>
+              <div class="prob-track">
+                <div
+                  class="prob-bar"
+                  id="bar-p2"
+                  style="width: 74%; background: var(--p2)"
+                ></div>
+              </div>
+            </div>
+            <div class="prob-row">
+              <div class="prob-header">
+                <span class="prob-tier" style="color: var(--p3)"
+                  >P3 — Review</span
+                >
+                <span class="prob-pct" id="prob-p3" style="color: var(--p3)"
+                  >15%</span
+                >
+              </div>
+              <div class="prob-track">
+                <div
+                  class="prob-bar"
+                  id="bar-p3"
+                  style="width: 15%; background: var(--p3)"
+                ></div>
+              </div>
+            </div>
+            <div class="prob-row">
+              <div class="prob-header">
+                <span class="prob-tier" style="color: var(--p4)"
+                  >P4 — High Risk</span
+                >
+                <span class="prob-pct" id="prob-p4" style="color: var(--p4)"
+                  >6%</span
+                >
+              </div>
+              <div class="prob-track">
+                <div
+                  class="prob-bar"
+                  id="bar-p4"
+                  style="width: 6%; background: var(--p4)"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key Drivers -->
+        <div class="drivers-card">
+          <div class="section-label">What's driving this decision</div>
+          <div id="drivers-list"></div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // ── Model approximation based on XGBoost learned thresholds ──────────────────
+      // Derived from SHAP feature importance analysis of trained model
+
+      function getCibilBand(score) {
+        if (score < 600) return { num: 0, name: "Poor", color: "var(--p4)" };
+        if (score < 650) return { num: 1, name: "Fair", color: "var(--p4)" };
+        if (score < 700) return { num: 2, name: "Good", color: "var(--p3)" };
+        if (score < 750)
+          return { num: 3, name: "Very Good", color: "var(--p2)" };
+        return { num: 4, name: "Excellent", color: "var(--p1)" };
+      }
+
+      function sigmoid(x) {
+        return 1 / (1 + Math.exp(-x));
+      }
+
+      function predict(inputs) {
+        const {
+          cibil,
+          deliq6,
+          deliq12,
+          dpd,
+          enq6,
+          enq12,
+          income,
+          emp,
+          tl,
+          missed,
+          hl,
+          pl,
+          cc,
+          gl,
+        } = inputs;
+
+        const band = getCibilBand(cibil);
+        const scoreBel650 = Math.max(0, 650 - cibil);
+        const scoreAb700 = Math.max(0, cibil - 700);
+        const deliqInt = deliq6 * 3 + deliq12 * 2;
+        const enqAcc = enq12 > 0 ? enq6 / enq12 : enq6;
+        const stableEmp = emp >= 2 ? 1 : 0;
+        const loanDiv =
+          (hl ? 1 : 0) + (pl ? 1 : 0) + (cc ? 1 : 0) + (gl ? 1 : 0);
+        const foir =
+          income > 0 ? (pl ? (0.3 * income * 12) / (income * 12) : 0) : 0;
+
+        // ── Risk score 0–100 (higher = riskier) ──
+        let risk = 0;
+
+        // CIBIL — dominant signal (SHAP importance ~0.98)
+        if (cibil < 600) risk += 85;
+        else if (cibil < 650) risk += 72;
+        else if (cibil < 670) risk += 45;
+        else if (cibil < 690) risk += 30;
+        else if (cibil < 710) risk += 18;
+        else if (cibil < 750) risk += 8;
+        else risk += 2;
+
+        // Below 650 threshold distance
+        risk += scoreBel650 * 0.08;
+
+        // Delinquency (SHAP ~0.54)
+        risk += Math.min(deliqInt * 2.5, 20);
+
+        // DPD 60+ (severe signal)
+        risk += Math.min(dpd * 4, 16);
+
+        // Missed payments
+        risk += Math.min(missed * 1.5, 10);
+
+        // Enquiry acceleration (stress signal)
+        risk += Math.min(enqAcc * 6, 8);
+        risk += Math.min(enq6 * 0.8, 5);
+
+        // Employment stability (negative risk)
+        risk -= stableEmp * 4;
+        risk -= Math.min(emp * 0.5, 5);
+
+        // Loan products
+        if (hl) risk -= 5; // Home loan = positive signal
+        if (gl) risk += 6; // Gold loan = distress signal
+        if (pl) risk += 1;
+        if (cc) risk -= 1;
+
+        // Loan diversity (positive signal up to 3)
+        risk -= Math.min(loanDiv * 1.5, 4);
+
+        // Income (weak signal)
+        risk -= Math.min((income - 15) * 0.05, 4);
+
+        risk = Math.max(0, Math.min(100, risk));
+
+        // ── Convert risk to probabilities ──
+        let p1, p2, p3, p4;
+
+        if (risk < 15) {
+          // Excellent zone
+          p1 = 0.45 - risk * 0.01;
+          p2 = 0.5 - risk * 0.005;
+          p3 = 0.04 + risk * 0.003;
+          p4 = 0.01 + risk * 0.002;
+        } else if (risk < 30) {
+          // Good zone
+          const t = (risk - 15) / 15;
+          p1 = 0.3 - t * 0.22;
+          p2 = 0.6 - t * 0.15;
+          p3 = 0.07 + t * 0.18;
+          p4 = 0.03 + t * 0.19;
+        } else if (risk < 50) {
+          // Grey zone — this is where non-CIBIL features matter most
+          const t = (risk - 30) / 20;
+          p1 = 0.08 - t * 0.06;
+          p2 = 0.45 - t * 0.2;
+          p3 = 0.25 + t * 0.1;
+          p4 = 0.22 + t * 0.16;
+        } else if (risk < 70) {
+          const t = (risk - 50) / 20;
+          p1 = 0.02 - t * 0.015;
+          p2 = 0.25 - t * 0.15;
+          p3 = 0.35 - t * 0.15;
+          p4 = 0.38 + t * 0.31;
+        } else {
+          // High risk zone
+          const t = Math.min((risk - 70) / 30, 1);
+          p1 = 0.005;
+          p2 = 0.1 - t * 0.08;
+          p3 = 0.2 - t * 0.14;
+          p4 = 0.695 + t * 0.22;
+        }
+
+        // Normalise
+        const total = p1 + p2 + p3 + p4;
+        p1 /= total;
+        p2 /= total;
+        p3 /= total;
+        p4 /= total;
+
+        // Tier
+        const probs = [p1, p2, p3, p4];
+        const tier = ["P1", "P2", "P3", "P4"][
+          probs.indexOf(Math.max(...probs))
+        ];
+
+        return { risk, p1, p2, p3, p4, tier, band };
+      }
+
+      // ── Feature impact drivers ────────────────────────────────────────────────────
+      function getDrivers(inputs) {
+        const {
+          cibil,
+          deliq6,
+          deliq12,
+          dpd,
+          enq6,
+          enq12,
+          income,
+          emp,
+          tl,
+          missed,
+          hl,
+          pl,
+          cc,
+          gl,
+        } = inputs;
+
+        const drivers = [];
+
+        // CIBIL score — always #1
+        const cibilImpact =
+          cibil < 600
+            ? 95
+            : cibil < 650
+              ? 80
+              : cibil < 680
+                ? 55
+                : cibil < 710
+                  ? 35
+                  : cibil < 750
+                    ? 15
+                    : 5;
+        const cibilDir = cibil < 680 ? "risk" : "safe";
+        const cibilDesc =
+          cibil < 650
+            ? `Score ${cibil} is below the 650 threshold — near-certain high risk zone`
+            : cibil < 700
+              ? `Score ${cibil} is in the grey zone (650–700) — other factors are deciding`
+              : `Score ${cibil} is above 700 — strong positive signal`;
+        drivers.push({
+          name: "Credit_Score",
+          desc: cibilDesc,
+          impact: cibilImpact,
+          dir: cibilDir,
+        });
+
+        // Delinquency
+        const deliqInt = deliq6 * 3 + deliq12 * 2;
+        if (deliqInt > 0) {
+          const deliqImpact = Math.min(deliqInt * 8, 70);
+          drivers.push({
+            name: "deliq_intensity",
+            desc: `${deliq6} recent delinquencies (6M×3 + 12M×2 = ${deliqInt} intensity score)`,
+            impact: deliqImpact,
+            dir: "risk",
+          });
+        }
+
+        // DPD
+        if (dpd > 0) {
+          drivers.push({
+            name: "num_times_60p_dpd",
+            desc: `${dpd} occurrence${dpd > 1 ? "s" : ""} of 60+ days past due — severe default signal`,
+            impact: Math.min(dpd * 18, 65),
+            dir: "risk",
+          });
+        }
+
+        // Enquiry acceleration
+        const enqAcc = enq12 > 0 ? enq6 / enq12 : enq6;
+        if (enqAcc > 0.5 || enq6 > 3) {
+          drivers.push({
+            name: "enq_acceleration",
+            desc: `${enq6} enquiries in 6M vs ${enq12} in 12M — rising credit-seeking pressure`,
+            impact: Math.min(enqAcc * 20 + enq6 * 3, 40),
+            dir: "risk",
+          });
+        }
+
+        // Employment stability
+        if (emp >= 2) {
+          drivers.push({
+            name: "stable_employment",
+            desc: `${emp} years with current employer — meets Indian bank 2-year threshold`,
+            impact: 20,
+            dir: "safe",
+          });
+        } else {
+          drivers.push({
+            name: "stable_employment",
+            desc: `Only ${emp} years employment — below 2-year Indian bank stability threshold`,
+            impact: 18,
+            dir: "risk",
+          });
+        }
+
+        // Home loan signal
+        if (hl) {
+          drivers.push({
+            name: "HL_Flag",
+            desc: "Home loan holder — passed secured underwriting, strong stability signal",
+            impact: 22,
+            dir: "safe",
+          });
+        }
+
+        // Gold loan signal
+        if (gl) {
+          drivers.push({
+            name: "GL_Flag",
+            desc: "Gold loan holder — associated with financial distress in Indian market",
+            impact: 25,
+            dir: "risk",
+          });
+        }
+
+        // Missed payments
+        if (missed > 0) {
+          drivers.push({
+            name: "Tot_Missed_Pmnt",
+            desc: `${missed} total missed payments — payment behaviour signal`,
+            impact: Math.min(missed * 7, 35),
+            dir: "risk",
+          });
+        }
+
+        // CIBIL band feature
+        const band = getCibilBand(cibil);
+        drivers.push({
+          name: "CIBIL_Band_Num",
+          desc: `Band ${band.num} (${band.name}) — RBI-aligned tier bucketing of raw score`,
+          impact: Math.abs(3 - band.num) * 18,
+          dir: band.num >= 2 ? "safe" : "risk",
+        });
+
+        // Sort by impact descending, take top 4
+        return drivers.sort((a, b) => b.impact - a.impact).slice(0, 4);
+      }
+
+      // ── UI config ─────────────────────────────────────────────────────────────────
+      const TIER_CONFIG = {
+        P1: {
+          label: "Premium Applicant",
+          advice:
+            "Excellent credit profile. Eligible for best available interest rate and maximum loan amount.",
+          bg: "rgba(34,197,94,0.08)",
+          border: "rgba(34,197,94,0.3)",
+          color: "var(--p1)",
+        },
+        P2: {
+          label: "Standard Approval",
+          advice:
+            "Strong credit profile. Eligible for standard loan terms at normal interest rate.",
+          bg: "rgba(59,130,246,0.08)",
+          border: "rgba(59,130,246,0.3)",
+          color: "var(--p2)",
+        },
+        P3: {
+          label: "Review Required",
+          advice:
+            "Moderate risk indicators present. Recommended for manual underwriter review before approval.",
+          bg: "rgba(245,158,11,0.08)",
+          border: "rgba(245,158,11,0.3)",
+          color: "var(--p3)",
+        },
+        P4: {
+          label: "High Risk — Decline",
+          advice:
+            "Significant default risk factors detected. Consider declining or requiring additional collateral / guarantor.",
+          bg: "rgba(239,68,68,0.08)",
+          border: "rgba(239,68,68,0.3)",
+          color: "var(--p4)",
+        },
+      };
+
+      // ── Read inputs ───────────────────────────────────────────────────────────────
+      function readInputs() {
+        return {
+          cibil: +document.getElementById("cibil").value,
+          deliq6: +document.getElementById("deliq6").value,
+          deliq12: +document.getElementById("deliq12").value,
+          dpd: +document.getElementById("dpd").value,
+          enq6: +document.getElementById("enq6").value,
+          enq12: +document.getElementById("enq12").value,
+          income: +document.getElementById("income").value,
+          emp: +document.getElementById("emp").value,
+          tl: +document.getElementById("tl").value,
+          missed: +document.getElementById("missed").value,
+          hl: document.getElementById("hl").checked,
+          pl: document.getElementById("pl").checked,
+          cc: document.getElementById("cc").checked,
+          gl: document.getElementById("gl").checked,
+        };
+      }
+
+      // ── API config ────────────────────────────────────────────────────────────────
+      const API_URL = "http://localhost:5050";
+      let apiAvailable = false;
+      let debounceTimer = null;
+
+      function renderApiUnavailable() {
+        const card = document.getElementById("decision-card");
+        card.style.background = "rgba(245,158,11,0.08)";
+        card.style.borderColor = "rgba(245,158,11,0.3)";
+        card.style.color = "var(--p3)";
+
+        document.getElementById("decision-tier").textContent = "--";
+        document.getElementById("decision-tier").style.color = "var(--p3)";
+        document.getElementById("decision-label").textContent =
+          "Model API Unavailable";
+        document.getElementById("decision-label").style.color = "var(--p3)";
+        document.getElementById("decision-advice").textContent =
+          "Start app_api.py on port 5050 to get live model predictions.";
+        document.getElementById("conf-value").textContent = "--";
+        document.getElementById("conf-value").style.color = "var(--p3)";
+
+        document.getElementById("gauge-score").textContent = "--";
+        document.getElementById("gauge-band").textContent = "NO DATA";
+        document.getElementById("gauge-path").style.strokeDashoffset = 220;
+        document.getElementById("gauge-path").style.stroke = "var(--muted)";
+
+        ["p1", "p2", "p3", "p4"].forEach((k) => {
+          document.getElementById(`prob-${k}`).textContent = "--";
+          document.getElementById(`bar-${k}`).style.width = "0%";
+          document.getElementById(`prob-${k}`).style.fontWeight = "400";
+        });
+
+        document.getElementById("drivers-list").innerHTML =
+          '<div class="driver-row"><div class="driver-info"><div class="driver-name">Waiting for model</div><div class="driver-desc">No local/demo prediction is used in model-only mode.</div></div></div>';
+      }
+
+      // Check if Flask API is running
+      async function checkApi() {
+        try {
+          const res = await fetch(`${API_URL}/health`, {
+            signal: AbortSignal.timeout(1500),
+          });
+          if (res.ok) {
+            apiAvailable = true;
+            document.getElementById("api-status").innerHTML =
+              '<span style="color:var(--teal)">● Live Model</span>';
+            return;
+          }
+          throw new Error("health check failed");
+        } catch {
+          apiAvailable = false;
+          document.getElementById("api-status").innerHTML =
+            '<span style="color:var(--p4)">● Offline</span>';
+          renderApiUnavailable();
+        }
+      }
+
+      // ── Render results to UI ──────────────────────────────────────────────────────
+      function renderResults(tier, p1, p2, p3, p4, risk, drivers, inp) {
+        const cfg = TIER_CONFIG[tier];
+
+        // Decision card
+        const card = document.getElementById("decision-card");
+        card.style.background = cfg.bg;
+        card.style.borderColor = cfg.border;
+        card.style.color = cfg.color;
+
+        const tierEl = document.getElementById("decision-tier");
+        tierEl.textContent = tier;
+        tierEl.style.color = cfg.color;
+
+        document.getElementById("decision-label").style.color = cfg.color;
+        document.getElementById("decision-label").textContent = cfg.label;
+        document.getElementById("decision-advice").textContent = cfg.advice;
+
+        const confProb = { P1: p1, P2: p2, P3: p3, P4: p4 }[tier];
+        const confEl = document.getElementById("conf-value");
+        confEl.textContent = Math.round(confProb * 100) + "%";
+        confEl.style.color = cfg.color;
+
+        // Pulse on tier change
+        if (card.dataset.tier !== tier) {
+          card.classList.remove("pulse");
+          void card.offsetWidth;
+          card.classList.add("pulse");
+          card.dataset.tier = tier;
+        }
+
+        // Gauge
+        const gaugeOffset = 220 - (risk / 100) * 220;
+        const gaugePath = document.getElementById("gauge-path");
+        gaugePath.style.strokeDashoffset = gaugeOffset;
+        const gaugeColor =
+          risk < 25
+            ? "var(--p1)"
+            : risk < 45
+              ? "var(--p2)"
+              : risk < 65
+                ? "var(--p3)"
+                : "var(--p4)";
+        gaugePath.style.stroke = gaugeColor;
+        document.getElementById("gauge-score").textContent = Math.round(risk);
+        document.getElementById("gauge-score").style.color = gaugeColor;
+        document.getElementById("gauge-band").textContent =
+          risk < 20
+            ? "VERY LOW"
+            : risk < 40
+              ? "LOW"
+              : risk < 60
+                ? "MODERATE"
+                : risk < 80
+                  ? "HIGH"
+                  : "VERY HIGH";
+
+        // Probability bars
+        const probs = { p1, p2, p3, p4 };
+        ["p1", "p2", "p3", "p4"].forEach((k) => {
+          const pct = Math.round(probs[k] * 100);
+          document.getElementById(`prob-${k}`).textContent = pct + "%";
+          document.getElementById(`bar-${k}`).style.width = pct + "%";
+          document.getElementById(`prob-${k}`).style.fontWeight =
+            k === tier.toLowerCase() ? "700" : "400";
+        });
+
+        // CIBIL threshold pointer
+        const pct = ((inp.cibil - 300) / 600) * 100;
+        document.getElementById("threshold-ptr").style.left = pct + "%";
+
+        // Drivers
+        const dl = document.getElementById("drivers-list");
+        dl.innerHTML = "";
+        const maxImpact = drivers[0]?.impact || 1;
+        drivers.forEach((d, i) => {
+          const barW = Math.round((d.impact / maxImpact) * 100);
+          const color = d.dir === "risk" ? "var(--p4)" : "var(--p1)";
+          const sign = d.dir === "risk" ? "↑ Risk" : "↓ Risk";
+          const desc =
+            d.desc || `Value: ${d.value !== undefined ? d.value : ""}`;
+          dl.innerHTML += `
+      <div class="driver-row">
+        <div class="driver-rank">${i + 1}</div>
+        <div class="driver-info">
+          <div class="driver-name">${d.name || d.feature}</div>
+          <div class="driver-desc">${desc}</div>
+        </div>
+        <div class="driver-impact">
+          <div class="driver-impact-val" style="color:${color}">${sign}</div>
+          <div class="driver-impact-bar" style="width:${barW}%;background:${color}"></div>
+        </div>
+      </div>`;
+        });
+      }
+
+      // ── Update from real API ──────────────────────────────────────────────────────
+      async function updateFromApi(inp) {
+        try {
+          const res = await fetch(`${API_URL}/predict`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cibil: inp.cibil,
+              income: inp.income * 1000, // convert k to actual
+              emp_years: inp.emp,
+              total_tl: inp.tl,
+              active_tl: Math.min(inp.tl, 2),
+              missed: inp.missed,
+              deliq6: inp.deliq6,
+              deliq12: inp.deliq12,
+              dpd60: inp.dpd,
+              enq6: inp.enq6,
+              enq12: inp.enq12,
+              hl: inp.hl,
+              pl: inp.pl,
+              cc: inp.cc,
+              gl: inp.gl,
+              education: "GRADUATE",
+              gender: "M",
+              married: "Married",
+              age: 35,
+            }),
+            signal: AbortSignal.timeout(3000),
+          });
+
+          const data = await res.json();
+          if (data.status !== "ok") throw new Error(data.message);
+
+          const { tier, probabilities: pb, risk_score, top_drivers } = data;
+
+          // Convert SHAP drivers to display format
+          const drivers = top_drivers.map((d) => ({
+            name: d.feature,
+            desc: `SHAP value: ${d.shap > 0 ? "+" : ""}${d.shap.toFixed(4)}  ·  Feature value: ${d.value}`,
+            impact: Math.abs(d.shap) * 100,
+            dir: d.direction,
+          }));
+
+          renderResults(
+            tier,
+            pb.P1,
+            pb.P2,
+            pb.P3,
+            pb.P4,
+            risk_score,
+            drivers,
+            inp,
+          );
+        } catch (err) {
+          apiAvailable = false;
+          document.getElementById("api-status").innerHTML =
+            '<span style="color:var(--p4)">● Offline</span>';
+          renderApiUnavailable();
+        }
+      }
+
+      // ── Update from local approximation (fallback / demo mode) ───────────────────
+      function updateLocal(inp) {
+        const { risk, p1, p2, p3, p4, tier } = predict(inp);
+        const drivers = getDrivers(inp);
+        renderResults(tier, p1, p2, p3, p4, risk, drivers, inp);
+      }
+
+      // ── Main update — debounced ───────────────────────────────────────────────────
+      function update() {
+        const inp = readInputs();
+
+        // Always update CIBIL pointer immediately (no debounce)
+        const pct = ((inp.cibil - 300) / 600) * 100;
+        document.getElementById("threshold-ptr").style.left = pct + "%";
+
+        // Debounce API calls by 120ms to avoid hammering on slider drag
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          if (apiAvailable) {
+            updateFromApi(inp);
+          } else {
+            renderApiUnavailable();
+          }
+        }, 120);
+      }
+
+      // ── Wire sliders ──────────────────────────────────────────────────────────────
+      const sliderMap = {
+        cibil: "val-cibil",
+        deliq6: "val-deliq6",
+        deliq12: "val-deliq12",
+        dpd: "val-dpd",
+        enq6: "val-enq6",
+        enq12: "val-enq12",
+        income: "val-income",
+        emp: "val-emp",
+        tl: "val-tl",
+        missed: "val-missed",
+      };
+
+      Object.entries(sliderMap).forEach(([id, valId]) => {
+        const el = document.getElementById(id);
+        el.addEventListener("input", () => {
+          document.getElementById(valId).textContent = el.value;
+          update();
+        });
+      });
+
+      // Wire checkboxes
+      ["hl", "pl", "cc", "gl"].forEach((id) => {
+        const el = document.getElementById(id);
+        const cb = document.getElementById(`cb-${id}`);
+        el.addEventListener("change", () => {
+          cb.classList.toggle("checked", el.checked);
+          update();
+        });
+        if (el.checked) cb.classList.add("checked");
+      });
+
+      // Init — check API then render
+      checkApi().then(() => update());
+      setInterval(checkApi, 10000); // recheck every 10s
+    </script>
+  </body>
+</html>

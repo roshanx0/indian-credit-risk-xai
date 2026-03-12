@@ -232,21 +232,23 @@ EDU_MAP = {
 # ── Load artifacts ─────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner="Loading model...")
 def load_artifacts():
-    missing = [f for f in ["shap_model.pkl", "feature_cols.pkl", "X_train_res.parquet"]
+    missing = [f for f in ["shap_model.pkl", "feature_cols.pkl", "feature_normalizer.pkl", "X_train_res.parquet"]
                if not os.path.exists(f)]
     if missing:
-        return None, None, None, f"Missing files: {', '.join(missing)}"
+        return None, None, None, None, f"Missing files: {', '.join(missing)}"
     try:
         with open("shap_model.pkl", "rb") as f:
             model = pickle.load(f)
         with open("feature_cols.pkl", "rb") as f:
             features = pickle.load(f)
+        with open("feature_normalizer.pkl", "rb") as f:
+            normalizer = pickle.load(f)
         X_tr = pd.read_parquet("X_train_res.parquet")
-        return model, features, X_tr, None
+        return model, features, normalizer, X_tr, None
     except Exception as e:
-        return None, None, None, str(e)
+        return None, None, None, None, str(e)
 
-model, feat_names, X_train_res, load_error = load_artifacts()
+model, feat_names, normalizer, X_train_res, load_error = load_artifacts()
 
 # ── SHAP explainer — cached so it doesn't recompute on every slider move ──────
 @st.cache_resource(show_spinner="Initialising SHAP explainer...")
@@ -308,7 +310,24 @@ def build_features(cibil, income, age, emp_years, education, gender, married,
     row["foir_proxy"]          = (int(pl) * 0.3 * income * 0.4) / (income + 1) if income > 0 else 0
     row["pct_active_TLs_ever"] = active_tl / max(total_tl, 1)
 
+    # Advanced features from notebook training pipeline
+    row["delinq_severity_score"] = deliq_6m * 5 + deliq_12m * 2 + dpd_60 * 8
+    row["deliq_trend"]           = deliq_6m / deliq_12m if deliq_12m > 0 else 0
+    row["enquiry_velocity"]      = enq_6m - row["enq_L3m"]
+    row["enquiry_concentration"] = (enq_6m ** 2) / (enq_12m + 1) if enq_12m > 0 else 0
+    row["income_scaled"]         = np.log1p(income / 1000) if income >= 0 else 0
+    row["income_foir_burden"]    = 0
+    row["tl_quality_score"]      = row["active_tl_ratio"] * 3 + row["loan_diversity"] * 2 + np.log1p(row["Age_Oldest_TL"]) * 0.5
+    row["payment_stress"]        = missed_pmnt * 2 + row["has_60dpd"] * 5 + row["has_30dpd"] * 2
+    row["cibil_poly2"]           = (650 - cibil) ** 2 if cibil < 650 else 0
+    row["distress_signal"]       = row["delinq_severity_score"] * (row["enq_acceleration"] + 0.1)
+
     return pd.DataFrame([row])[feat_names].fillna(0)
+
+
+def normalize_features(df):
+    normalized = pd.DataFrame(normalizer.transform(df), columns=feat_names, index=df.index)
+    return normalized.fillna(0)
 
 
 def get_cibil_band(score):
@@ -390,6 +409,24 @@ def preprocess_batch(df_raw):
         df['employment_years']  = df['Time_With_Curr_Empr'] / 12
         df['stable_employment'] = (df['employment_years'] >= 2).astype(int)
 
+    # Advanced features used in notebook training pipeline
+    df['delinq_severity_score'] = df.get('num_deliq_6mts', 0) * 5 + df.get('num_deliq_12mts', 0) * 2 + df.get('num_times_60p_dpd', 0) * 8
+    df['deliq_trend'] = np.where(df.get('num_deliq_12mts', 0) > 0,
+                                 df.get('num_deliq_6mts', 0) / df.get('num_deliq_12mts', 0), 0)
+    df['enquiry_velocity'] = df.get('enq_L6m', 0) - df.get('enq_L3m', 0)
+    df['enquiry_concentration'] = np.where(df.get('enq_L12m', 0) > 0,
+                                           (df.get('enq_L6m', 0) ** 2) / (df.get('enq_L12m', 0) + 1), 0)
+    df['income_scaled'] = np.log1p(df.get('NETMONTHLYINCOME', 0).clip(lower=0) / 1000)
+    df['income_foir_burden'] = 0
+    if 'active_tl_ratio' in df.columns and 'loan_diversity' in df.columns and 'Age_Oldest_TL' in df.columns:
+        df['tl_quality_score'] = df['active_tl_ratio'] * 3 + df['loan_diversity'] * 2 + np.log1p(df['Age_Oldest_TL'].clip(lower=0)) * 0.5
+    else:
+        df['tl_quality_score'] = 0
+    df['payment_stress'] = df.get('Tot_Missed_Pmnt', 0) * 2 + df['has_60dpd'] * 5 + df['has_30dpd'] * 2
+    df['cibil_poly2'] = np.where(df.get('Credit_Score', 0) < 650,
+                                 (650 - df.get('Credit_Score', 0)) ** 2, 0)
+    df['distress_signal'] = df['delinq_severity_score'] * (df.get('enq_acceleration', 0) + 0.1)
+
     return df.reindex(columns=feat_names, fill_value=0)
 
 
@@ -416,6 +453,8 @@ if load_error:
         pickle.dump(shap_model, f)
     with open("feature_cols.pkl", "wb") as f:
         pickle.dump(feat_names, f)
+    with open("feature_normalizer.pkl", "wb") as f:
+        pickle.dump(normalizer, f)
     X_train_res.to_parquet("X_train_res.parquet")
     ```
     Then restart the Streamlit app.
@@ -470,8 +509,9 @@ with tab1:
     X_input = build_features(cibil, income, age, emp_years, education, gender, married,
                                total_tl, active_tl, missed_pmnt, deliq_6m, deliq_12m,
                                dpd_60, enq_6m, enq_12m, hl, pl, cc, gl)
-    pred  = int(model.predict(X_input)[0])
-    proba = model.predict_proba(X_input)[0]
+    X_input_norm = normalize_features(X_input)
+    pred  = int(model.predict(X_input_norm)[0])
+    proba = model.predict_proba(X_input_norm)[0]
     tier  = TIER_MAP[pred]
     color = TIER_COLORS[tier]
     bg    = TIER_BG[tier]
@@ -544,7 +584,7 @@ with tab1:
                 unsafe_allow_html=True)
     with st.spinner("Computing explanation..."):
         try:
-            shap_exp   = explainer(X_input)
+            shap_exp   = explainer(X_input_norm)
             shap_class = shap_exp[:, :, pred]
             fig, _ = plt.subplots(figsize=(11, 5))
             shap.waterfall_plot(shap_class[0], max_display=12, show=False)
@@ -588,8 +628,9 @@ with tab2:
 
             with st.spinner(f"Scoring {len(df_raw):,} applicants..."):
                 X_batch  = preprocess_batch(df_raw)
-                preds_b  = model.predict(X_batch)
-                probas_b = model.predict_proba(X_batch)
+                X_batch_norm = normalize_features(X_batch)
+                preds_b  = model.predict(X_batch_norm)
+                probas_b = model.predict_proba(X_batch_norm)
 
             results = df_raw.copy()
             results.insert(0, "Predicted_Tier", [TIER_MAP[p] for p in preds_b])
@@ -666,6 +707,7 @@ with tab3:
             Type &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {model_type}<br>
             Classes &nbsp;&nbsp;: P1 · P2 · P3 · P4<br>
             Features &nbsp;: {len(feat_names)}<br>
+            Preprocess : notebook-matched feature engineering + MinMaxScaler<br>
             Tuning &nbsp;&nbsp;&nbsp;: Optuna (40 trials)<br>
             Imbalance : SMOTE (4-class balanced)<br>
             <br>
