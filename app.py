@@ -232,7 +232,7 @@ EDU_MAP = {
 # ── Load artifacts ─────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner="Loading model...")
 def load_artifacts():
-    missing = [f for f in ["shap_model.pkl", "feature_cols.pkl", "feature_normalizer.pkl", "X_train_res.parquet"]
+    missing = [f for f in ["shap_model.pkl", "feature_cols.pkl", "feature_normalizer.pkl"]
                if not os.path.exists(f)]
     if missing:
         return None, None, None, None, f"Missing files: {', '.join(missing)}"
@@ -243,7 +243,7 @@ def load_artifacts():
             features = pickle.load(f)
         with open("feature_normalizer.pkl", "rb") as f:
             normalizer = pickle.load(f)
-        X_tr = pd.read_parquet("X_train_res.parquet")
+        X_tr = pd.read_parquet("X_train_res.parquet") if os.path.exists("X_train_res.parquet") else None
         return model, features, normalizer, X_tr, None
     except Exception as e:
         return None, None, None, None, str(e)
@@ -455,7 +455,8 @@ if load_error:
         pickle.dump(feat_names, f)
     with open("feature_normalizer.pkl", "wb") as f:
         pickle.dump(normalizer, f)
-    X_train_res.to_parquet("X_train_res.parquet")
+    # Optional (only if you want a saved training reference table)
+    # X_train_res.to_parquet("X_train_res.parquet")
     ```
     Then restart the Streamlit app.
     """)
