@@ -229,6 +229,32 @@ EDU_MAP = {
     "GRADUATE": 2, "POST-GRADUATE": 3, "PROFESSIONAL": 4
 }
 
+# ── Feature glossary for non-technical users ────────────────────────────────────
+FEATURE_GLOSSARY = {
+    "Credit_Score": "Your CIBIL credit score (higher = lower risk)",
+    "num_deliq_6mts": "Number of late payments in last 6 months (higher = riskier)",
+    "num_deliq_12mts": "Number of late payments in last 12 months (higher = riskier)",
+    "num_times_60p_dpd": "Times you were 60+ days late on payments (higher = riskier)",
+    "Tot_Missed_Pmnt": "Total missed payments on record (higher = riskier)",
+    "enq_L6m": "Credit enquiries in last 6 months (high = seeking credit, may indicate stress)",
+    "enq_L12m": "Credit enquiries in last 12 months (high = seeking credit)",
+    "NETMONTHLYINCOME": "Your monthly income in rupees (higher = lower risk)",
+    "Total_TL": "Total number of loans/credit accounts (diversification)",
+    "Tot_Active_TL": "Active loans you're currently paying (shows active obligations)",
+    "Age": "Your age in years (stability factor)",
+    "Time_With_Curr_Empr": "How long you've been with current employer in months (stability)",
+    "active_tl_ratio": "% of your accounts that are active/open (higher = riskier)",
+    "loan_diversity": "Number of different types of loans (HL, PL, CC, GL)",
+    "delinq_severity_score": "Combined score of all late payment incidents (higher = riskier)",
+    "deliq_intensity": "Weighted measure of recent vs older late payments",
+    "enquiry_velocity": "How many new credit inquiries recently (high = risky behavior)",
+    "payment_stress": "Combined measure of missed payments and defaults",
+    "CIBIL_Band_Num": "Your credit score band (0=Poor, 1=Fair, 2=Good, 3=Very Good, 4=Excellent)",
+    "delinq_trend": "Are your late payments getting better or worse?",
+    "stable_employment": "1 if employed 2+ years, 0 if less (stability factor)",
+}
+
+
 # ── Load artifacts ─────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner="Loading model...")
 def load_artifacts():
@@ -243,17 +269,75 @@ def load_artifacts():
             features = pickle.load(f)
         with open("feature_normalizer.pkl", "rb") as f:
             normalizer = pickle.load(f)
-        X_tr = pd.read_parquet("X_train_res.parquet") if os.path.exists("X_train_res.parquet") else None
-        return model, features, normalizer, X_tr, None
+        return model, features, normalizer, None
     except Exception as e:
-        return None, None, None, None, str(e)
+        return None, None, None, str(e)
 
-model, feat_names, normalizer, X_train_res, load_error = load_artifacts()
+model, feat_names, normalizer, load_error = load_artifacts()
 
 # ── SHAP explainer — cached so it doesn't recompute on every slider move ──────
 @st.cache_resource(show_spinner="Initialising SHAP explainer...")
 def get_explainer(_model):
     return shap.TreeExplainer(_model)
+
+# ── Feature builder ────────────────────────────────────────────────────────────
+def get_feature_explanation(feature_name):
+    """Return plain English explanation for a technical feature name"""
+    return FEATURE_GLOSSARY.get(feature_name, feature_name)
+
+
+def generate_shap_summary(cibil, income, age, emp_years, deliq_6m, deliq_12m, 
+                          dpd_60, enq_6m, missed_pmnt, total_tl, active_tl, pred_tier):
+    """Generate plain English explanation for WHY this tier was chosen"""
+    
+    tier_explanations = {
+        "P1": {
+            "title": "Premium Applicant",
+            "what": "You are an excellent credit risk - we'd love to lend to you",
+            "why_factors": [
+                ("Strong CIBIL", "Your credit score shows excellent payment history"),
+                ("Clean record", "No or minimal late payments"),
+                ("Stable income", "Good income and stable employment"),
+            ],
+            "advice": "You qualify for premium rates and maximum loan amounts."
+        },
+        "P2": {
+            "title": "Standard Approval",
+            "what": "Your credit profile is solid - we'll approve your loan",
+            "why_factors": [
+                ("Good CIBIL", "Credit score is in acceptable range"),
+                ("Decent income", "Sufficient income to repay"),
+                ("Mostly clean", "Few or no recent payment issues"),
+            ],
+            "advice": "Standard terms apply. You're a good lending prospect."
+        },
+        "P3": {
+            "title": "Under Review",
+            "what": "Your application needs closer inspection before approval",
+            "why_factors": [
+                ("Moderate CIBIL", "Credit score indicates some risk"),
+                ("Risk signals", "Some payment difficulties or credit seeking"),
+                ("Income concerns", "Repayment capacity may be limited"),
+            ],
+            "advice": "A credit officer will review your full profile before deciding."
+        },
+        "P4": {
+            "title": "High Risk / Likely Decline",
+            "what": "Your application shows significant risk - may be declined",
+            "why_factors": [
+                ("Poor CIBIL", "Credit score is low - pattern of late payments"),
+                ("Payment defaults", "History of serious payment problems"),
+                ("Risk indicators", "Multiple concerning factors combined"),
+            ],
+            "advice": "Consider improving your credit profile before reapplying."
+        }
+    }
+    
+    info = tier_explanations.get(pred_tier, {})
+    return info
+
+
+
 
 # ── Feature builder ────────────────────────────────────────────────────────────
 def build_features(cibil, income, age, emp_years, education, gender, married,
@@ -455,8 +539,6 @@ if load_error:
         pickle.dump(feat_names, f)
     with open("feature_normalizer.pkl", "wb") as f:
         pickle.dump(normalizer, f)
-    # Optional (only if you want a saved training reference table)
-    # X_train_res.to_parquet("X_train_res.parquet")
     ```
     Then restart the Streamlit app.
     """)
@@ -524,6 +606,24 @@ with tab1:
         <p style="color:#374151">{TIER_ADVICE[tier]}</p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Quick summary of key factors
+    key_factors = []
+    if cibil < 650:
+        key_factors.append("⚠️ CIBIL score below 650 (high risk threshold)")
+    if deliq_6m > 0 or deliq_12m > 0:
+        key_factors.append(f"⚠️ Recent delinquencies detected ({deliq_6m} in last 6m)")
+    if dpd_60 > 0:
+        key_factors.append(f"⚠️ {dpd_60} instance(s) of 60+ day payment default")
+    if enq_6m >= 3:
+        key_factors.append(f"⚠️ High credit enquiry velocity ({enq_6m} in last 6m)")
+    if missed_pmnt > 0:
+        key_factors.append(f"⚠️ {missed_pmnt} missed payments on record")
+    
+    if key_factors:
+        st.markdown('<p class="section-label">Key Risk Indicators</p>', unsafe_allow_html=True)
+        for factor in key_factors:
+            st.markdown(f"• {factor}")
 
     # ── Metrics row ──
     c1, c2, c3, c4 = st.columns(4)
@@ -583,19 +683,76 @@ with tab1:
     # ── SHAP waterfall ──
     st.markdown('<p class="section-label">SHAP Explanation — Why this decision?</p>',
                 unsafe_allow_html=True)
+    
+    # Plain-English summary
+    st.markdown(f"""
+    <div style="background:#eff6ff; border-left:5px solid #2563eb; padding:14px 18px; border-radius:6px; margin-bottom:16px; font-size:0.95rem; line-height:1.6">
+        <strong style="color:#0f1923">📊 What This Chart Shows:</strong><br>
+        The chart below explains why this applicant is classified as <strong>{TIER_LABELS[tier]}</strong>:<br>
+        <br>
+        • <strong style="color:#dc2626">+ RED bars</strong> = Factors that made the risk <strong>HIGHER</strong><br>
+        • <strong style="color:#2563eb">- BLUE bars</strong> = Factors that made the risk <strong>LOWER</strong><br>
+        <br>
+        <em>Longer bars = stronger influence on the decision</em>
+    </div>
+    """, unsafe_allow_html=True)
+    
     with st.spinner("Computing explanation..."):
         try:
             shap_exp   = explainer(X_input_norm)
             shap_class = shap_exp[:, :, pred]
             fig, _ = plt.subplots(figsize=(11, 5))
-            shap.waterfall_plot(shap_class[0], max_display=12, show=False)
-            plt.title(f"Feature contributions toward {TIER_LABELS[tier]}",
+            shap.waterfall_plot(shap_class[0], max_display=10, show=False)
+            plt.title(f"Top 10 Factors Driving {TIER_LABELS[tier]} Classification",
                        fontweight="bold", fontsize=11, pad=12)
             plt.tight_layout()
             st.pyplot(fig, width='stretch')
             plt.close()
-            st.caption("🔴 Red bars push toward this tier  ·  🔵 Blue bars push away  ·  "
-                        "E[f(x)] = baseline prediction  ·  f(x) = this applicant's score")
+            
+            st.caption("""
+            **How to read this chart:**
+            - **Base (left):** Average applicant starting point
+            - **+ Red bars:** Factors that PUSH this applicant INTO {tier}
+            - **- Blue bars:** Factors that PULL this applicant OUT OF {tier}
+            - **Final value (right):** This applicant's actual decision score
+            """.format(tier=tier))
+            
+            # Show plain English summary for WHY this tier
+            st.markdown('<p class="section-label">Why You Got This Decision</p>', unsafe_allow_html=True)
+            
+            summary_info = generate_shap_summary(cibil, income, age, emp_years, deliq_6m, deliq_12m,
+                                                dpd_60, enq_6m, missed_pmnt, total_tl, active_tl, tier)
+            
+            st.markdown(f"""
+            **{summary_info['title']}**  
+            {summary_info['what']}
+            """)
+            
+            st.markdown("**Why?**")
+            for factor, explanation in summary_info['why_factors']:
+                st.markdown(f"• **{factor}** — {explanation}")
+            
+            st.markdown(f"**Next Steps:**  {summary_info['advice']}")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Show what each feature in the chart means
+            st.markdown('<p class="section-label">What Do The Chart Factors Mean?</p>', unsafe_allow_html=True)
+            st.markdown("Here are explanations for the key factors shown in the chart above:")
+            
+            col1, col2 = st.columns(2)
+            
+            top_features = [
+                "Credit_Score", "num_deliq_6mts", "enq_L6m", "Tot_Missed_Pmnt",
+                "NETMONTHLYINCOME", "Total_TL", "delinq_severity_score", "payment_stress",
+                "active_tl_ratio", "Time_With_Curr_Empr"
+            ]
+            
+            for i, feature in enumerate(top_features):
+                col = col1 if i % 2 == 0 else col2
+                explanation = get_feature_explanation(feature)
+                col.markdown(f"**{feature}**  \n{explanation}")
+            
         except Exception as e:
             st.warning(f"SHAP explanation unavailable: {e}")
 
